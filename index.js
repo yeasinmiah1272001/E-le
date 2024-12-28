@@ -35,8 +35,7 @@ async function run() {
     const enrollCollection = database.collection("enroll");
     const appliedCollection = database.collection("applied");
 
-    // clases routes
-
+    // ++++++++++++++clases routes++++++++++++++++++
     app.post("/new-classes", async (req, res) => {
       const newClasses = req.body;
       //   console.log("new cl", newClasses);
@@ -127,6 +126,11 @@ async function run() {
         res.status(500).send({ error: "Failed to update class" });
       }
     });
+    // ++++++++++++++clases routes end++++++++++++++++++
+
+    // ++++++++++++++Carts routes start+++++++++++++++++
+
+    // ++++++++++++++Carts routes end+++++++++++++++++
 
     await client.db("admin").command({ ping: 1 });
     console.log(
