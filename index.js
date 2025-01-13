@@ -2,6 +2,7 @@ const express = require("express");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 8000;
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const cors = require("cors");
 
@@ -40,7 +41,7 @@ async function run() {
       const newClasses = req.body;
       //   console.log("new cl", newClasses);
       const result = await classesCollection.insertOne(newClasses);
-      console.log("result", result);
+      // console.log("result", result);
       res.send(result);
     });
     app.get("/classes", async (req, res) => {
@@ -130,7 +131,72 @@ async function run() {
 
     // ++++++++++++++Carts routes start+++++++++++++++++
 
+    app.post("/add-to-cart", async (req, res) => {
+      const newCartItem = req.body;
+      const result = await cartCollection.insertOne(newCartItem);
+      // console.log("result", result);
+      res.send(result);
+    });
+
+    // get cart item
+
+    app.get("/cartItem/:id", async (req, res) => {
+      const id = req.params.id;
+      const email = req.body.email;
+      const query = {
+        classId: id,
+        userMail: email,
+      };
+      const projection = { classId: 1 };
+      const result = await cartCollection.findOne(query, {
+        projection: projection,
+      });
+      console.log("result", result);
+      res.send(result);
+    });
+
+    // cart info by user
+
+    app.get("/cart/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { userMail: email };
+      const projection = { classId: 1 };
+      const carts = await cartCollection.find(query, {
+        projection: projection,
+      });
+      const classIds = carts.map((cart) => new ObjectId(cart.classId));
+      const query2 = { _id: { $in: classIds } };
+
+      const result = await classesCollection.find(query2).toArray;
+      res.send(result);
+    });
+
+    // delete cart item
+
+    app.delete("/delete-cartitem/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { classId: id };
+
+      const result = await cartCollection.deleteOne(query);
+      console.log("reslut", result);
+      res.send;
+    });
     // ++++++++++++++Carts routes end+++++++++++++++++
+
+    // payment
+
+    app.post("/create-checkout-session", async (req, res) => {
+      const price = req.body;
+      const amount = parseInt(price) * 100;
+      const paymentIntendt = await stripe.checkout.sessions.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntendt.clientSecret,
+      });
+    });
 
     await client.db("admin").command({ ping: 1 });
     console.log(
